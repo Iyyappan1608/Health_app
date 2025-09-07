@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = "http://172.20.10.10:5000/";
+const API_BASE_URL = "http://192.168.1.4:5000/";
 
 const getAuthHeaders = async () => {
   const token = await AsyncStorage.getItem('session_token');
@@ -8,6 +8,23 @@ const getAuthHeaders = async () => {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };
+};
+
+// Separate function for unauthenticated GET requests
+const getUnauthenticated = async (endpoint: string) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, { 
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await response.json();
+    return { ok: response.ok, data };
+  } catch (error) {
+    console.error(`API Error on GET ${endpoint}:`, error);
+    return { ok: false, data: { message: 'Network error or server is down.' } };
+  }
 };
 
 const get = async (endpoint: string) => {
@@ -22,32 +39,32 @@ const get = async (endpoint: string) => {
   }
 };
 
-// In ApiService.ts, update the post function to include better error handling:
 const post = async (endpoint: string, body: object, isAuthenticated = true) => {
   try {
     const headers = isAuthenticated ? await getAuthHeaders() : { 'Content-Type': 'application/json' };
+    
+    console.log(`Making POST request to: ${endpoint}`);
+    
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
     });
     
-    // First, check if the response is OK (status 200-299)
-    if (!response.ok) {
-      // Try to get error message from JSON response
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        // If response is not JSON, use status text
-        errorData = { message: `Server error: ${response.status} ${response.statusText}` };
-      }
-      return { ok: false, data: errorData, status: response.status };
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (e) {
+      responseData = { message: `Invalid JSON response: ${response.status} ${response.statusText}` };
     }
     
-    // If response is OK, parse the JSON
-    const data = await response.json();
-    return { ok: true, data, status: response.status };
+    console.log(`Response from ${endpoint}:`, { status: response.status, data: responseData });
+    
+    return { 
+      ok: response.ok, 
+      data: responseData, 
+      status: response.status 
+    };
     
   } catch (error) {
     console.error(`API Error on POST ${endpoint}:`, error);
@@ -71,11 +88,18 @@ const ApiService = {
   predictDiabetes: (diabetesData: object) => post('predict_diabetes_subtype', diabetesData),
   predictHypertension: (hypertensionData: object) => post('predict_hypertension', hypertensionData),
   generateCarePlan: () => post('generate_care_plan', {}),
-  getLiveUpdate: () => get('get_live_update'),
+  getLiveUpdate: () => getUnauthenticated('get_live_update'),
+
+  recordCarePlanInteraction: (interactionData: object) => post('care_plan/interaction', interactionData),
+  getCarePlanProgress: () => get('care_plan/progress'),
+  updateCarePlanProgress: (progressData: object) => post('care_plan/progress', progressData),
+  canAccessCarePlanDay: (dayData: object) => post('care_plan/can_access_day', dayData),
+  sendCarePlanNotification: (notificationData: object) => post('care_plan/notify', notificationData),
   
-  // Add new endpoints if needed
-  wearableConnect: () => get('wearable/connect'),
+  // Use unauthenticated GET for wearable endpoints
+  wearableConnect: () => getUnauthenticated('wearable/connect'),
   liveMonitor: () => post('live_monitor', {}),
+   chatWithBot: (message: string) => post('chatbot', { message }),
 };
 
 export default ApiService;

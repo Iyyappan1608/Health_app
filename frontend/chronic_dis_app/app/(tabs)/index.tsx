@@ -20,6 +20,8 @@ import { useData, VitalReading } from '../../src/context/DataContext';
 // The CarePlanItem type is no longer needed in this file
 // type CarePlanItem = { ... };
 
+
+
 export default function HomeScreen() {
   const navigation = useNavigation();
   const router = useRouter();
@@ -142,6 +144,18 @@ export default function HomeScreen() {
             />
             </DashboardCard>
         </AnimatedCard>
+
+        <AnimatedCard index={5}>
+  <DashboardCard icon="chatbubble-ellipses-outline" title="Medical Assistant">
+    <TouchableOpacity 
+      style={styles.chatButton}
+      onPress={() => router.push('/chatbot')}
+    >
+      <Ionicons name="chatbubble-ellipses-outline" size={20} color="#FFFFFF" />
+      <Text style={styles.chatButtonText}>Chat with AI Assistant</Text>
+    </TouchableOpacity>
+  </DashboardCard>
+</AnimatedCard>
         
       </ScrollView>
     </SafeAreaView>
@@ -168,4 +182,18 @@ const styles = StyleSheet.create({
   separator: { height: 1, backgroundColor: '#F0F4F8', marginVertical: 5, },
   drilldownButton: { backgroundColor: '#5D6D7E', padding: 15, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', },
   drilldownButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600', },
+  chatButton: {
+  backgroundColor: Colors.primary,
+  padding: 15,
+  borderRadius: 10,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+chatButtonText: {
+  color: '#FFFFFF',
+  fontSize: 16,
+  fontWeight: '600',
+  marginLeft: 10,
+},
 });
